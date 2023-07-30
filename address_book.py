@@ -1,17 +1,15 @@
 from collections import UserDict
-  
-  
-class Filed:
+from datetime import date  
+
+class Field:
     """
     родительский класс всех полей
     поле для ввода новых данных в записную книгу
     """
     def __init__(self, value: str) -> None:
         self._value = None
-        if self.__valid_value(value) :
-           self._value = value
-        else:
-            raise ValueError('received data must be STR')   
+        self._value = value
+      
          
     @staticmethod
     def __valid_value(value) -> bool:
@@ -29,7 +27,7 @@ class Filed:
             raise ValueError('received data must be STR')    
         
 
-class Name(Filed):
+class Name(Field):
     """
     поле имени, принимает любую стр без проверки
     """
@@ -37,7 +35,7 @@ class Name(Filed):
         super().__init__(value)
 
 
-class Phone(Filed):
+class Phone(Field):
     """
     поле номера телефона, принимает стр(только цифри)
     """
@@ -54,24 +52,54 @@ class Phone(Filed):
             return 10 <= len(phone) <= 15 #псевдо проверка номера
         else: 
             raise ValueError('received data must be STR')    
-            
-    @Filed.value.setter
+
+    @Field.value.setter
     def value(self, value: str): 
         if self.__valid_value(value):
             self._value = value
         else:
             raise ValueError("Phone number isn't correct") 
 
+class Birthday(Field):
+    """
+    поле дати рождения, принимает любую стр без проверки
+    """
+    def __init__(self, value: str) -> None:
+        if self.__valid_value(value):
+            super().__init__(value)
+        else:
+            raise ValueError('not correct date isoformat >>> yyyy-mm-dd')    
+            
 
+    @staticmethod
+    def __valid_value(value) -> bool:
+        if type(value) == str:
+            try:
+                valid_date = date.fromisoformat(value)
+                return True
+            except ValueError:
+                return False
+        else:
+            raise ValueError('received data must be STR')      
+
+    @Field.value.setter
+    def value(self, value: str): 
+        if self.__valid_value(value):
+            self._value = value
+        else:      
+            raise ValueError('not correct date isoformat >>> yyyy-mm-dd') 
+        
 class Record:
     """
     класс которий содержит в себе все поля и методи работи с ними
     сейчас простая реализация add/remove/change phone 
     """
   
-    def __init__(self, name: Name, *phones) -> None:
+    def __init__(self, name: Name, *phones: list[Phone], birthday: Birthday = None ) -> None:
         self.name = name
         self.phones = list(phones)
+        if birthday:
+            self.birthday = birthday
 
     def add_phone(self, phone: Phone):   
         self.phones.append(phone)
@@ -90,6 +118,15 @@ class Record:
             self.phones[index] = new_phone
         else:
             raise ValueError(f"The phone '{old_phone.value}' is not in the record.")
+
+    def days_to_birthday(self) -> int :
+        today = date.today()
+        bday = date.fromisoformat(self.birthday.value).replace(year=today.year)
+        if today > bday :
+           bday= bday.replace(year=today.year+1)
+        return (bday-today).days
+            
+            
          
     
 class AddressBook(UserDict):
@@ -105,6 +142,14 @@ class AddressBook(UserDict):
 
 
 if __name__ == '__main__':
+
+    name = Name('Bill')
+    phone = Phone('1234567890')
+    bday = Birthday('1994-02-26')
+    rec = Record(name, phone, birthday=bday)
+    print(rec.phones[0].value)
+    print(rec.birthday.value)
+    print(rec.days_to_birthday())
     
     # name = Name('Bill')
     # phone = Phone('1234567890')
@@ -120,12 +165,18 @@ if __name__ == '__main__':
     
     # print('All Ok)')  
 
-    a = Filed("name")
-    num = Phone('12345678974')
-    print(a.value)
-    print(num.value)
+    # a = Field("name")
+    # num = Phone('12345678974')
+    # print(a.value)
+    # print(num.value)
+    # num.value = "987654321123"
+    # print(num.value)
 
+    # day = Birthday('1994-02-26')
+    # day.value = '1994-02-28'
+    # print(day.value)
 
+    
 
 
 
