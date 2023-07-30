@@ -1,33 +1,33 @@
 from collections import UserDict
-
-
-    
-    
+  
+  
 class Filed:
     """
     родительский класс всех полей
     поле для ввода новых данных в записную книгу
     """
     def __init__(self, value: str) -> None:
-        if isinstance(value, str):
-            self._value  = value
-        else: 
-            raise ValueError    
-       
+        self._value = None
+        if self.__valid_value(value) :
+           self._value = value
+        else:
+            raise ValueError('received data must be STR')   
+         
+    @staticmethod
+    def __valid_value(value) -> bool:
+        return type(value) == str 
+
     @property
     def value(self):
-        print('gettter_filed')
         return self._value
     
     @value.setter
     def value(self, value: str):
-        print('setter_Filed')
-        if isinstance(value, str):
-            self._value  = value
+        if self.__valid_value(value) :
+           self._value = value
         else:
-            raise ValueError    
-
-
+            raise ValueError('received data must be STR')    
+        
 
 class Name(Filed):
     """
@@ -35,29 +35,32 @@ class Name(Filed):
     """
     def __init__(self, value: str) -> None:
         super().__init__(value)
-        
-   
+
 
 class Phone(Filed):
     """
     поле номера телефона, принимает стр(только цифри)
     """
     def __init__(self, value: str) -> None:
-        if value.isdigit():
-            super().__init__(value)
+        if self.__valid_value(value):
+             super().__init__(value)
+        else:
+            raise ValueError("Phone number isn't correct")    
+
+    @staticmethod
+    def __valid_value(value) -> bool:
+        if type(value) == str:  # TODO как тут сделать через супер?
+            phone = ''.join(filter(str.isdigit, value))
+            return 10 <= len(phone) <= 15 #псевдо проверка номера
         else: 
-            raise ValueError('')    
-   
+            raise ValueError('received data must be STR')    
+            
     @Filed.value.setter
     def value(self, value: str): 
-        print('setter_phone1')   
-        super(Phone, Phone).value.__set__(self, value) 
-        print('setter_phone2')
-        if value.isdigit(): # TODO ful phone valid
+        if self.__valid_value(value):
             self._value = value
         else:
-            raise ValueError    
-        
+            raise ValueError("Phone number isn't correct") 
 
 
 class Record:
@@ -117,9 +120,9 @@ if __name__ == '__main__':
     
     # print('All Ok)')  
 
-    num = Phone("123")
-    print(num.value)
-    num.value = "qwert"
+    a = Filed("name")
+    num = Phone('12345678974')
+    print(a.value)
     print(num.value)
 
 
