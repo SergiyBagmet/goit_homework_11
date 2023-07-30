@@ -95,11 +95,10 @@ class Record:
     сейчас простая реализация add/remove/change phone 
     """
   
-    def __init__(self, name: Name, *phones: list[Phone], birthday: Birthday = None ) -> None:
+    def __init__(self, name: Name, phone: Phone=None, birthday: Birthday=None ) -> None:
         self.name = name
-        self.phones = list(phones)
-        if birthday:
-            self.birthday = birthday
+        self.phones = [phone] if phone else []
+        self.birthday = birthday if birthday else None
 
     def add_phone(self, phone: Phone):   
         self.phones.append(phone)
@@ -125,28 +124,33 @@ class Record:
         if today > bday :
            bday= bday.replace(year=today.year+1)
         return (bday-today).days
-            
-            
-         
+      
     
 class AddressBook(UserDict):
     """
     класс хранилише записной книги  - словарь
     "имя" : обьект рекорд которий содержит все поля(и методи) в соответствии с этим именем 
     """
-    
+
     def add_record(self, rec: Record):
         if not isinstance(rec, Record):
             raise ValueError("Record must be an instance of the Record class.")
         self.data[rec.name.value] = rec
-
-
+    
+    def __next__(self, n: int):
+        if not self.data:
+            raise StopIteration
+        pass 
+        
+    def __iter__(self, n: int):
+        return self.__next__(n)    
+        
 if __name__ == '__main__':
 
     name = Name('Bill')
     phone = Phone('1234567890')
-    bday = Birthday('1994-02-26')
-    rec = Record(name, phone, birthday=bday)
+    b_day = Birthday('1994-02-26')
+    rec = Record(name, phone, b_day)
     print(rec.phones[0].value)
     print(rec.birthday.value)
     print(rec.days_to_birthday())
