@@ -131,7 +131,7 @@ class Record:
 class AddressBook(UserDict):
     """
     класс хранилише записной книги  - словарь
-    "имя" : обьект рекорд которий содержит все поля(и методи) в соответствии с этим именем 
+    "имя" : обьект рекорд    которий содержит все поля(и методи) в соответствии
     """
 
     def add_record(self, rec: Record):
@@ -139,21 +139,24 @@ class AddressBook(UserDict):
             raise ValueError("Record must be an instance of the Record class.")
         self.data[rec.name.value] = rec
     
-    def __iter__(self):
-        self.__counter = 0
+    def __iter__(self): # функция которая делает обьект класса итерейбл
+        self.__counter = 0 # объявляем счетчик повторений(будем использовать как индекс в слайсах)
         return self
 
     def iterator(self, num:int = 1):
-        self.__num = num
-        self.rec_list = [str(val) for val in self.data.values()]
-        return self.__iter__() 
+        "метод итератор с параметром, кол выводов строк за раз "
+        if type(num) != int or num <=0 :
+            raise ValueError('parametr must be integer and >0')
+        self.__num = num # количество виводов(за 1 итерацию) по сути ШАГ нашего итератора
+        self.ab_rec_list = [str(rec) for rec in self.data.values()] # формируем список строк значений нашего словаря #TODO yeald по идеи будет бистрее чем єто
+        return self.__iter__() # возвращаем визов итера что бы вернуть итерейбл TODO по другому вообще работает? или тут мастхев?
 
     def __next__(self):
-        if self.__counter < (len(self.data.keys()) // self.__num):
+        if self.__counter < len(self.ab_rec_list): # условие которое не позволяет стартовому индексу выйти в оутофрендж
             start_i = self.__counter
-            stop_i = self.__counter + self.__num
-            self.__counter +=self.__num
-            return "\n".join(self.rec_list[start_i: stop_i])
+            stop_i = self.__counter + self.__num 
+            self.__counter +=self.__num  
+            return "\n".join(self.ab_rec_list[start_i: stop_i]) # возвращает обьедененние строки(TODO может нужно возвращать список объектов рекорд???)
         raise StopIteration
     
   
@@ -187,9 +190,10 @@ if __name__ == '__main__':
     ab.add_record(rec_2)
     ab.add_record(rec_3)
     ab.add_record(rec_4)
-    for i in ab.iterator(2):
+    for i in ab.iterator(1):
         print(i)
         break
+        
 
     
     # name = Name('Bill')
