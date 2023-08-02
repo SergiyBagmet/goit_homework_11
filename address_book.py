@@ -143,16 +143,20 @@ class AddressBook(UserDict):
         self.__counter = 0
         return self
 
+    def iterator(self, num:int = 1):
+        self.__num = num
+        self.rec_list = [str(val) for val in self.data.values()]
+        return self.__iter__() 
+
     def __next__(self):
-        if self.__counter < len(self.data.keys()):
-            rec = [val for val in self.data.values()]
-            self.__counter +=1 
-            return rec[self.__counter - 1]
+        if self.__counter < (len(self.data.keys()) // self.__num):
+            start_i = self.__counter
+            stop_i = self.__counter + self.__num
+            self.__counter +=self.__num
+            return "\n".join(self.rec_list[start_i: stop_i])
         raise StopIteration
     
-    def ierator(self, n):
-        pass
-        
+  
  
         
 if __name__ == '__main__':
@@ -169,17 +173,23 @@ if __name__ == '__main__':
     phone_3 = Phone('1234567890')
     b_day_3 = Birthday('1994-02-26')
 
+    name_4 = Name('Igor')
+    phone_4 = Phone('1234567890')
+    b_day_4 = Birthday('1994-02-26')
+
 
     rec_1 = Record(name_1, phone_1, b_day_1)
     rec_2 = Record(name_2, phone_2, b_day_2)
     rec_3 = Record(name_3, phone_3, b_day_3)
+    rec_4 = Record(name_4, phone_4, b_day_4)
     ab = AddressBook()
     ab.add_record(rec_1)
     ab.add_record(rec_2)
     ab.add_record(rec_3)
-
-    for i in ab:
+    ab.add_record(rec_4)
+    for i in ab.iterator(2):
         print(i)
+        break
 
     
     # name = Name('Bill')
