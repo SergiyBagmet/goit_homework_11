@@ -1,24 +1,21 @@
 from collections import UserDict
-from datetime import date  
+from datetime import date 
+from dateparser import parse as dt_parser
 
 class Field:
     """
-    родительский класс всех полей
-    поле для ввода новых данных в записную книгу
+    Class parent representing a field used in the record of the address book.
     """
     def __init__(self, value: str) -> None:
-        self.__valid_value(value)
-
-        self._value = None
-        self._value = value
+        self.value = value # при инициализации отрабативает сеттер
       
-    @classmethod # тут может статик_метод?
-    def __valid_value(cls, value) -> None:
+    @staticmethod
+    def __valid_value(value) -> None:
         if type(value) != str:
             raise TypeError('received data must be STR') 
         
     @property
-    def value(self):
+    def value(self) :
         return self._value
     
     @value.setter
@@ -27,72 +24,96 @@ class Field:
         self._value = value
 
     def __str__(self) -> str:
-        if self.value == None:
-            return f""
         return f'{self.value}'
         
 
 class Name(Field):
     """
-    поле имени, принимает любую стр без проверки
+    Class representing the name field in a record of  the address book.
     """
     def __init__(self, value: str) -> None:
-        super().__init__(value)
-        # self.__valid_value(value)
+        self.value = value
+
+    # наследуем геттер и сеттер ради тренировки 
+    # в данном случае можно било обойтись супер в инит
+    @property
+    def value(self) -> str:
+        return super(Name,Name).value.fget(self)
+
+    @value.setter
+    def value(self, value: str) -> None:
+        super(Name,Name).value.fset(self, value)  
+       
 
 
 class Phone(Field):
     """
-    поле номера телефона, принимает стр(только цифри)
+    Class representing the phone field in a record of the address book.
     """
     def __init__(self, value: str) -> None:
-        super().__init__(value)
-        self.__valid_phone(value)
+        self.value = value # при инициализации отрабативает сеттер
         
-    @classmethod # тут может статик_метод? 
-    def __valid_phone(cls, value) -> None:
-        # тут нужна проверка на стр?
+    @staticmethod
+    def __valid_phone(value) -> None:
         phone = ''.join(filter(str.isdigit, value))
         if 9 >= len(phone) <= 15 : #псевдо проверка номера
             raise ValueError("Phone number isn't correct")    
 
-    @Field.value.setter
+    @Field.value.setter # переопределяем сеттер родительского класса
     def value(self, value: str) -> None:
-        self.__valid_value(value)
+        super(Phone, Phone).value.__set__(self, value) # родительский сеттер проверка на стр
+        self.__valid_phone(value)
         self._value = value
       
 class FormatDateError(Exception):
+    """
+    Exception, If the input date string is not in a valid date format.
+    """
     pass
 
 class Birthday(Field):
     """
-    поле дати рождения, принимает любую стр без проверки
+    Class representing the birthday field in a record of the address book.
+    The date is stored in ISO 8601 format.
     """
     def __init__(self, value: str) -> None:
-        super().__init__(value)
-        self.__valid_value(value)
-        
-   
-    @classmethod
-    def __valid_value(cls, value) -> None:
-        # тут нужна проверка на стр?
+        self.value = value # при инициализации отрабативает сеттер
+    
+    @staticmethod
+    def __valid_date(value: str) -> str:
+        """
+        Validate and convert the input date string to a valid ISO-formatted date.
+        Args:
+            value (str): The input date string.
+        Raises:
+            FormatDateError: If the input date string is not in a valid date format.
+        Returns:
+            str: The valid ISO-formatted date string.    
+        """
         try:
-            value = date.fromisoformat(value)
+           return date.isoformat(dt_parser(str(value), settings={'STRICT_PARSING': True}).date())
         except Exception: 
-            raise FormatDateError('not correct date isoformat >>> yyyy-mm-dd')
+            raise FormatDateError('not correct date!!!')
             
     @Field.value.setter
     def value(self, value: str) -> None:
-        self.__valid_value(value)
-        self._value = value
+        self._value = self.__valid_date(value)
+        
       
-class RecordNotBirthdayError(Exception):
+class RecordNotBirthdayError(Exception): 
+    """
+    Custom exception class to indicate that the record does not have a birthday.
+    """
     pass
 
 class Record:
     """
-    класс которий содержит в себе все поля и методи работи с ними
-    add/remove/change phone + day to birthday
+    Class representing a record in an address book.
+
+    Attributes:
+        name (Name): The name of the contact.
+        phones (list): A list of phone numbers associated with the contact.
+        birthday (Birthday): The birthday of the contact.
     """
   
     def __init__(self, name: Name, phone: Phone, birthday: Birthday=None ) -> None:
@@ -103,33 +124,33 @@ class Record:
 
         self.name = name
         self.phones = [phone] if phone else []
-        self.birthday = birthday if birthday else None
+        self.birthday = birthday if birthday is not None else None
 
     @staticmethod
-    def try_valid_type_name(name): 
+    def try_valid_type_name(name: str) -> Name: 
         if type(name) != Name:
             try:
                 return Name(name) # тут перезаписуємо змінну name в обькт классу
             except Exception: 
-                raise ValueError (f"name:'{name}' must be type(Name) or valid like Name.obj")
+                raise ValueError(f"name: '{name}' must be type(Name) or a valid string representation of a Name object")
         return name    
 
     @staticmethod
-    def try_valid_type_phone(phone):
+    def try_valid_type_phone(phone: str) -> Phone:
         if type(phone) != Phone:
             try:
                 return Phone(phone)
             except Exception:
-                raise ValueError(f"phone:{phone} must be type(Phone) or valid like Phone.obj")
+                raise ValueError(f"phone:{phone} must be type(Phone) or a valid string representation of a Phone object")
         return phone    
 
     @staticmethod
-    def try_valid_type_birthday(birthday):    
+    def try_valid_type_birthday(birthday: str) -> str:    
         if type(birthday) != Birthday and birthday != None:
             try:
                 return Birthday(str(birthday))
             except Exception: 
-                raise ValueError(f"birthday:{birthday} must be type(Birthday) or None / or valid like Birthday.obj")
+                raise ValueError(f"birthday:{birthday} must be type(Birthday) or a valid string representation of a Birthday object")
         return birthday    
        
         
@@ -138,17 +159,44 @@ class Record:
         phones_str = " ".join([ph.value for ph in self.phones]) 
         return f'<Record> name: {self.name} -->> phone(s): {phones_str} {birthday_str}'
 
-    def add_phone(self, phone: Phone):
+    def add_phone(self, phone: Phone) -> None:
+        """
+        Add a new phone number to the list of phone numbers for the contact.
+        Args:
+            phone (Phone) or try valid Str: The phone number to be added to the contact.
+        Returns:
+            None: This method does not return any value.
+        """
         phone = self.try_valid_type_phone(phone)
         self.phones.append(phone)
 
-    def remove_phone(self, phone: Phone):
+    def remove_phone(self, phone: Phone) -> None:
+        """
+        Remove a phone number from the list of phone numbers for the contact.
+
+        Args:
+            phone (Phone) or try valid Str: The phone number to be removed from the contact.
+        Raises:
+            KeyError: If the phone number is not found in the contact's list of phone numbers.
+        Returns: 
+            None: This method does not return any value.
+        """
         phone = self.try_valid_type_phone(phone)
         if phone not in self.phones:
             raise KeyError(f"The phone '{phone}' is not in the record.")
         self.phones.remove(phone)
         
-    def change_phone(self, old_phone: Phone, new_phone : Phone):
+    def change_phone(self, old_phone: Phone, new_phone : Phone) -> None:
+        """
+        Change a phone number in the list of phone numbers for the contact.
+
+        Args:
+            old_phone (Phone): The existing phone number to be replaced.
+            new_phone (Phone): The new phone number to replace the existing one.
+            or try valid Str : --//-- .
+        Raises:
+            ValueError: If the old phone number is not found in the contact's list of phone numbers.
+        """
         old_phone = self.try_valid_type_phone(old_phone)
         new_phone = self.try_valid_type_phone(new_phone)
         if old_phone in self.phones: # если номер входит получаем индекс 
@@ -159,11 +207,15 @@ class Record:
 
     def days_to_birthday(self) -> int :
         """
-        метод считает количество дней до др
-        если др не указано  - ошибка
+        Calculate the number of days remaining until the contact's next birthday.
+
+        Returns:
+            int: The number of days remaining until the contact's next birthday.
+        Raises:
+            RecordNotBirthdayError: If the contact does not have a birthday set.
         """
         if self.birthday == None:
-            raise RecordNotBirthdayError
+            raise RecordNotBirthdayError("No birthday set for the contact.")
         today = date.today()
         bday = date.fromisoformat(self.birthday.value).replace(year=today.year) # дата др в этом году 
         if today > bday : # если др уже прошло берем дату следующего(в следующем году)
@@ -172,23 +224,43 @@ class Record:
           
 class AddressBook(UserDict):
     """
-    класс хранилише записной книги  - словарь
-    "имя" : обьект рекорд    которий содержит все поля(и методи) в соответствии
+    A class representing an address book, which is a dictionary 
+    with record names as keys and record objects as values.
     TODO Singelton?
     """
     
-    def add_record(self, record: Record):
+    def add_record(self, record: Record) -> None:
+        """
+        Add a record to the address book.
+
+        Args:
+            record (Record): The record object to be added.
+        Raises:
+            TypeError: If the given object is not an instance of the Record class.
+        """
         if type(record) != Record:
             raise TypeError("Record must be an instance of the Record class.")
         self.data[record.name.value] = record 
     
     def iterator(self, item_number: int) -> str:
-        """ возвращает строку содержащую объеденение значений словаря 
-            в количестве item_number за раз + хвост
+        """
+        Iterate through the records in the address book and yield groups of records.
+
+        Args:
+            item_number (int) > 0: The number of records to be yielded at a time.
+        Yields:
+            str: A string containing the representation of a group of records.
+        Notes:
+            If the given item_number is greater than the total number of records in the address book,
+            all records will be yielded in one group.
+        Raises:
+            ValueError: If item_number is less than or equal to 0.    
             TODO красивий(табличний .format принт)
         """
-        if item_number > len(self.data): 
-            item_number = len(self.data)
+        if item_number <= 0:
+            raise ValueError("Item number must be greater than 0.")
+        elif item_number > len(self.data): # если количство виводов(за раз) больше чем количество записей
+            item_number = len(self.data) # виводим все
         counter = 0
         result = ""
         for id_, record in self.data.items(): # так как ми наследуемся от UserDict може юзать кк словарь
@@ -204,6 +276,8 @@ class AddressBook(UserDict):
     
 if __name__ == '__main__':
 
+    test = Birthday("26*02*1994")
+    print(test)
     name_1 = Name('Bill')
     phone_1 = Phone('1234567890')
     b_day_1 = Birthday('1994-02-26')
@@ -220,7 +294,10 @@ if __name__ == '__main__':
     phone_4 = Phone('1234567890')
     b_day_4 = Birthday('1994-02-26')
 
-    rec_1 = Record("Лена", "1234554545", "1994-10-26")
+    rec_1 = Record("Лена", "1234554545", test)
+    print(rec_1.days_to_birthday())
+
+
     rec_2 = Record("Охрана", phone_2, b_day_2)
     rec_3 = Record("а я не Лена", phone_3, b_day_3)
     rec_4 = Record(name_4, phone_4, b_day_4)
@@ -229,8 +306,8 @@ if __name__ == '__main__':
     ab.add_record(rec_2)
     ab.add_record(rec_3)
     ab.add_record(rec_4)
-    for i in ab.iterator(3):
-        print(i)
+    # for i in ab.iterator(2):
+    #     print(i)
     
     # name = Name('Bill')
     # phone = Phone('1234567890')
